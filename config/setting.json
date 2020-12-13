@@ -1,0 +1,27 @@
+{
+  "config": {
+    "branch": "marter",
+    "cname": "www.hebeihq.cn",
+    "domain": "hebeihq.cn",
+    "email": "1159861818@qq.com",
+    "platform": "github",
+    "repository": "hbsihq2",
+    "token": "6c0925da7c899ec120e161caa740ff056b14ab98",
+    "username": "zangHaoqian"
+  },
+  "comment": {
+    "commentPlatform": "gitalk",
+    "disqusSetting": {
+      "api": "",
+      "apikey": "",
+      "shortname": ""
+    },
+    "gitalkSetting": {
+      "clientId": "",
+      "clientSecret": "",
+      "owner": "",
+      "repository": ""
+    },
+    "showComment": false
+  }
+}

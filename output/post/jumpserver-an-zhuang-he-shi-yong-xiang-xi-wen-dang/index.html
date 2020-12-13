@@ -1,0 +1,362 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>jumpserver安装和使用详细文档 | </title>
+<link rel="shortcut icon" href="C:/Users/Administrator/Documents/hve-notes/output/favicon.ico">
+<link rel="stylesheet" href="C:/Users/Administrator/Documents/hve-notes/output/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.23.0/moment.min.js"></script>
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="C:/Users/Administrator/Documents/hve-notes/output">
+  <img class="avatar" src="C:/Users/Administrator/Documents/hve-notes/output/images/avatar.png" alt="" width="80px" height="80px">
+  </a>
+  <h1 class="site-title">
+    
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+</div>
+
+      
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              jumpserver安装和使用详细文档
+            </h2>
+            <div class="post-info">
+              <time class="post-time">
+                · 2020-12-13 ·
+              </time>
+              
+            </div>
+            <div class="post-content">
+              <h2 id="一 、 准备环境">一 、 准备环境</h2><ul>
+<li>硬件配置: 2个CPU核心, 4G 内存, 50G 硬盘（最低）</li>
+<li>操作系统: Linux 发行版 x86_64</li>
+<li>Python = 3.6.x</li>
+<li>Mysql Server ≥ 5.7</li>
+<li>Redis</li>
+</ul>
+<h3 id="安装工具">安装工具</h3><p>更换yum源</p>
+<pre><code class="language-shell">wget -O /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo &amp;&amp; sed -i -e &#39;/mirrors.cloud.aliyuncs.com/d&#39; -e &#39;/mirrors.aliyuncs.com/d&#39; /etc/yum.repos.d/CentOS-Base.repo &amp;&amp; yum clean all</code></pre>
+<p>安装 epel-release 和更换源</p>
+<pre><code class="language-shell">yum install  epel-release
+wget -O /etc/yum.repos.d/epel.repo https://mirrors.aliyun.com/repo/epel-7.repo</code></pre>
+<p>安装 其他工具</p>
+<pre><code class="language-shell">##安装 wget
+yum install -y wget 
+ ##安装 git
+yum install -y git
+ ## 安装 gcc
+ yum install -y gcc</code></pre>
+<h3 id="1.安装mysql">1.安装mysql</h3><pre><code class="language-shell">#1.添加mysq57源
+yum -y localinstall http://mirrors.ustc.edu.cn/mysql-repo/mysql57-community-release-el7.rpm
+#2。安装mysql-server
+yum install mysql-community-server mysql-community-devel -y
+#3.启动
+[root@localhost ~]# systemctl enable mysqld
+[root@localhost ~]# systemctl start mysqld
+##修改root密码
+---查看root默认密码---
+[root@localhost ~]# grep &#39;password&#39; /var/log/mysqld.log 
+---修改----
+[root@localhost ~]# mysql -uroot -p&#39;Jj(dkdwVI5ba&#39;
+mysql&gt; alter user &#39;root&#39;@&#39;localhost&#39; identified by &#39;Com.123456&#39;;
+##-----为jumpserver创建数据库以及用户
+mysql&gt; create database jumpserver default charset &#39;utf8&#39; collate &#39;utf8_bin&#39;;
+mysql&gt; grant all on jumpserver.* to &#39;jumpserver&#39;@&#39;127.0.0.1&#39; identified by &#39;Com.123456&#39;;
+mysql&gt; grant all on jumpserver.* to &#39;jumpserver&#39;@&#39;%&#39; identified by &#39;Com.123456&#39;;
+mysql&gt; flush privileges;</code></pre>
+<h3 id="2.搭建python环境">2.搭建Python环境</h3><pre><code class="language-shell">##--安装
+yum install python36-devel python36 -y
+
+--构建虚拟环境--
+[root@localhost ~]# python3.6 -m venv /opt/py3
+--进入环境--
+[root@localhost ~]# source /opt/py3/bin/activate
+</code></pre>
+<h3 id="3.获取jumpserver的项目代码">3.获取jumpserver的项目代码</h3><pre><code class="language-shell">cd /opt &amp;&amp; \
+wget https://github.com/jumpserver/jumpserver/releases/download/v2.5.3/jumpserver-v2.5.3.tar.gz
+--解压--
+tar zxvf jumpserver-v2.5.3.tar.gz
+--重命名--
+ mv jumpserver-v2.5.3 jumpserver
+ ###wget下载慢可用迅雷下载再上传</code></pre>
+<h3 id="4.安装编译环境">4.安装编译环境</h3><pre><code class="language-shell">##安装编译环境
+/opt/jumpserver/requirements/
+rpm_requirements.txt #rpm 环境
+requirements.txt #python环境
+-------安装--------
+yum install -y $(cat rpm_requirements.txt)
+pip install -r requirements.txt
+##若无法下载就修改pip源 
+vi ~/.pip/pip.conf
+---pip源---
+[global]
+index-url = https://mirrors.aliyun.com/pypi/simple/
+
+[install]
+trusted-host=mirrors.aliyun.com
+##也可用以下命令直接安装
+pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+
+</code></pre>
+<h3 id="5.修改配置文件">5.修改配置文件</h3><pre><code class="language-shell">(py3) [root@localhost jumpserver]# cp config_example.yml config.yml
+(py3) [root@localhost jumpserver]# vi config.yml
+# $ cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 49;echo
+SECRET_KEY: nBAHxvmIK7QDvDNk3R2Gqpa32t4Jd7SECD8a5MZzskF6jiKP9
+
+# SECURITY WARNING: keep the bootstrap token used in production secret!
+# 预共享Token coco和guacamole用来注册服务账号，不在使用原来的注册接受机制
+BOOTSTRAP_TOKEN: Htry5PvLiG85OhxJ8Cli8K23eZoX1KwWN9Jbb7RkBO8smOuY9
+
+# 使用Mysql作为数据库
+DB_ENGINE: mysql
+DB_HOST: 127.0.0.1
+DB_PORT: 3306
+DB_USER: jumpserver
+DB_PASSWORD: Com.123456
+DB_NAME: jumpserver
+</code></pre>
+<h2 id="6.启动jumpserver">6.启动jumpserver</h2><pre><code class="language-shell">(py3) [root@localhost jumpserver]# ./jms start all -d
+##出现如下信息成功启动
+gunicorn is running: 3776
+flower is running: 3787
+daphne is running: 3791
+celery_ansible is running: 3795
+celery_default is running: 3810
+celery_node_tree is running: 3816
+celery_check_asset_perm_expired is running: 3828
+celery_heavy_tasks is running: 3832
+beat is running: 3837
+</code></pre>
+<h2 id="7.部署koko、下载lina和luna和nigix整合">7.部署koko、下载lina和luna和Nigix整合</h2><pre><code class="language-shell">##下载koko--建议使用迅雷下载要不然慢
+wget https://github.com/jumpserver/koko/releases/download/v2.5.3/koko-v2.5.3-linux-amd64.tar.gz
+##解压并改名
+tar -xf koko-v2.5.3-linux-amd64.tar.gz
+mv koko-v2.5.3-linux-amd64/ koko
+
+##将koko/下的kubectl 移动到/usr/local/bin/
+(py3) [root@localhost opt]# cd koko/
+(py3) [root@localhost koko]# ls
+config_example.yml  init-kubectl.sh  koko  kubectl  locale  static  templates
+(py3) [root@localhost koko]# mv kubectl /usr/local/bin/
+
+##下载jumpserver 的  kubectl 改成可执行放到/usr/local/bin/ 改名为 rawkubectl
+wget https://download.jumpserver.org/public/kubectl.tar.gz
+tar -xf kubectl.tar.gz
+chmod 755 kubectl
+mv kubectl /usr/local/bin/rawkubectl
+
+##--- 拷贝一份配置文件
+(py3) [root@localhost koko]# cp config_example.yml config.yml
+(py3) [root@localhost koko]# vi config.yml 
+
+# 请和jumpserver 配置文件中保持一致，注册完成后可以删除
+BOOTSTRAP_TOKEN: Htry5PvLiG85OhxJ8Cli8K23eZoX1KwWN9Jbb7RkBO8smOuY9
+
+##执行kok
+./koko
+
+
+## 安装nginx
+yum install nginx
+
+##下载lina组件
+cd /opt
+wget https://github.com/jumpserver/lina/releases/download/v2.5.3/lina-v2.5.3.tar.gz
+(py3) [root@localhost opt]# tar -xf lina-v2.5.3.tar.gz
+(py3) [root@localhost opt]# mv lina-v2.5.3 lina
+(py3) [root@localhost opt]# chown -R nginx:nginx lina
+
+##下载Luna
+cd /opt
+wget https://github.com/jumpserver/luna/releases/download/v2.5.3/luna-v2.5.3.tar.gz
+tar -xf luna-v2.5.3.tar.gz
+mv luna-v2.5.3 luna
+chown -R nginx:nginx luna 
+
+##配置整合 
+#nginx修改配置文件
+#如下</code></pre>
+<pre><code class="language-shell">server {
+    listen 80;
+
+    client_max_body_size 100m;  # 录像及文件上传大小限制
+
+    location /ui/ {
+        try_files $uri / /index.html;
+        alias /opt/lina/;
+    }
+
+    location /luna/ {
+        try_files $uri / /index.html;
+        alias /opt/luna/;  # luna 路径, 如果修改安装目录, 此处需要修改
+    }
+
+    location /media/ {
+        add_header Content-Encoding gzip;
+        root /opt/jumpserver/data/;  # 录像位置, 如果修改安装目录, 此处需要修改
+    }
+
+    location /static/ {
+        root /opt/jumpserver/data/;  # 静态资源, 如果修改安装目录, 此处需要修改
+    }
+
+    location /koko/ {
+        proxy_pass       http://localhost:5000;
+        proxy_buffering off;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection &quot;upgrade&quot;;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        access_log off;
+    }
+
+    location /guacamole/ {
+        proxy_pass       http://localhost:8081/;
+        proxy_buffering off;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $http_connection;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        access_log off;
+    }
+
+    location /ws/ {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://localhost:8070;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection &quot;upgrade&quot;;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:8080;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /core/ {
+        proxy_pass http://localhost:8080;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location / {
+        rewrite ^/(.*)$ /ui/$1 last;
+    }
+}</code></pre>
+<pre><code class="language-shell">##启动nginx
+(py3) [root@localhost opt]# systemctl enable nginx
+(py3) [root@localhost opt]# systemctl start nginx
+
+#nginx -t
+#nginx -s reload
+</code></pre>
+<hr>
+<h1 id="web页面">web页面</h1><h2 id="1.创建jumpserver用户">1.创建jumpserver用户</h2><ul>
+<li><p>用于连接jumpserver 识别用户</p>
+</li>
+<li><p>jump用户为实际人员使用的账户</p>
+</li>
+<li><p>通过用户登录jumpserver 再根据授权的资产使用系统用户登录系统</p>
+<p><img src="http://changetm.oss-cn-beijing.aliyuncs.com/Course/Attachment/d218bb02-9018-4783-9638-0cc1ea432835.png" alt=""></p>
+</li>
+</ul>
+<h2 id="2.创建管理用户">2.创建管理用户</h2><ul>
+<li>管理用户是资产（被控服务器）上的 root，或拥有 NOPASSWD: ALL sudo 权限的用户， </li>
+<li>JumpServer 使用该用户来 <code>推送系统用户</code>、<code>获取资产硬件信息</code> 等。</li>
+</ul>
+<p><img src="http://changetm.oss-cn-beijing.aliyuncs.com/Course/Attachment/1cc04ca8-c0a7-430c-9bba-04aa4031011c.png" alt=""></p>
+<h2 id="创建系统用户">创建系统用户</h2><ul>
+<li>系统用户是 JumpServer 跳转登录资产时使用的用户，可以理解为登录资产用户</li>
+</ul>
+<pre><code>开启自动推送
+- 如果支持可以自动推送不支持请手动配置
+设置密码
+- 配置当前系统用户的密码</code></pre><h2 id="创建资源和授权用户">创建资源和授权用户</h2><ul>
+<li>添加资源</li>
+<li>为用户和用户组授权资源</li>
+</ul>
+<p><img src="http://changetm.oss-cn-beijing.aliyuncs.com/Course/Attachment/be89cd2a-f0f7-4870-998f-52898cbf7a51.png" alt=""></p>
+<p><img src="http://changetm.oss-cn-beijing.aliyuncs.com/Course/Attachment/fcf6543e-dec2-45a4-a810-8b04dd959037.png" alt=""></p>
+<h2 id="成功连接">成功连接</h2><ul>
+<li>web连接</li>
+</ul>
+<p><img src="http://changetm.oss-cn-beijing.aliyuncs.com/Course/Attachment/c4303339-a721-47b1-bb3e-4dcabaa2ecf0.png" alt=""></p>
+<ul>
+<li><p>xshel 连接jump</p>
+<p><img src="http://changetm.oss-cn-beijing.aliyuncs.com/Course/Attachment/a8a1eea3-e9ad-4119-9eb0-b5f227d87642.png" alt=""></p>
+</li>
+</ul>
+<h2 id="p查看资产">P查看资产</h2><p><img src="http://changetm.oss-cn-beijing.aliyuncs.com/Course/Attachment/baff7d49-a5fc-4345-80b0-74630869c307.png" alt=""></p>
+<h2 id="输入数字进行连接">输入数字进行连接</h2><p><img src="http://changetm.oss-cn-beijing.aliyuncs.com/Course/Attachment/20409016-ad09-46d6-aa56-c48e88c8a790.png" alt=""></p>
+<p>备注：<br>如何忘记了管理用户admin的密码，可以这样来修改：<br>[root@jumpserver ~]# cd /opt/jumpserver/apps/<br>(py3) [root@jumpserver apps]# python change password admin<br>也可以创建新管理用户：<br>(py3) [root@jumpserver apps]# python manage.py createsuperuser --username=admin2 --email=<a href="mailto:2345@qq.com">2345@qq.com</a></p>
+
+            </div>
+          </article>
+        </div>
+    
+        
+
+        
+    
+        <div class="site-footer">
+  
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

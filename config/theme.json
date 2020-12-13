@@ -1,0 +1,14 @@
+{
+  "config": {
+    "archivesPageSize": 50,
+    "dateFormat": "YYYY-MM-DD",
+    "footerInfo": "",
+    "postPageSize": 10,
+    "postUrlFormat": "SLUG",
+    "showFeatureImage": true,
+    "siteDescription": "温故而知新",
+    "siteName": "",
+    "tagUrlFormat": "SHORT_ID",
+    "themeName": "notes"
+  }
+}
